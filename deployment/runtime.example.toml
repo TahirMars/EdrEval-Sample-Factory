@@ -1,0 +1,14 @@
+# deployment/runtime.example.toml —— 非敏感运行配置模板（可入库；实例文件按部署改写）
+# 契约：docs/superpowers/specs/2026-08-22-unified-runtime-config.md §3
+# 注意：base_url 禁嵌凭据/禁带 /chat/completions 后缀/禁 query；http:// 仅限 loopback。
+
+[model]
+provider = "llm-api"                                # llm-api / ollama / llm-proxy
+base_url = "https://api.example.internal/v1"        # 内网 vLLM / Ollama 用 http://127.0.0.1:PORT
+name = "glm-5.3-flash"
+seed = 42                                           # 派生 LlmFingerprint（同 Manifest 重跑可比）
+planner_prompt_ver = "v1"
+timeout_sec = 300
+# LLM 回答语言（P7 §5，可选；封闭集 zh-CN/en-US；未配置=跟随 Provider 默认）
+# output_locale = "zh-CN"
+# ca_certificate = "/etc/edreval/ca/internal-ca.pem"  # 可选：内网自签 CA 路径

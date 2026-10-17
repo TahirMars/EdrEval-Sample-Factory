@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edreval-sample-factory"
+version = "0.1.0"
+description = "EdrEval Harness：终端样本生成（流水线 A）— TTP 插件成形、组合生产与功能真值验证"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7,<3",
+    "textual>=8.2,<9",
+    "openai>=2,<3",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.1,<4"]
+
+[project.scripts]
+edreval-sample-factory = "packages.sample_factory.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["packages*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = false
+files = ["packages"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true

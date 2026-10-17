@@ -1,0 +1,89 @@
+{
+  "schema_version": "factory-vmware-plugin-harness-v1",
+  "spec": {
+    "schema_version": "sf-plugin-harness-v1",
+    "harness_ref": "plugin-harness://execution/windows-x64/v1",
+    "role": "execution_atom",
+    "ph_ids": [
+      "PH-IN01",
+      "PH-IN02",
+      "PH-IN03",
+      "PH-IN04",
+      "PH-IN05",
+      "PH-IN06",
+      "PH-IN07",
+      "PH-IN08",
+      "PH-PE01",
+      "PH-PE02",
+      "PH-PE05",
+      "PH-PS01",
+      "PH-EX02",
+      "PH-EX11",
+      "PH-BL07",
+      "PH-BL08",
+      "PH-OB05",
+      "PH-EX01",
+      "PH-PS02",
+      "PH-PS03",
+      "PH-DI01",
+      "PH-DI02",
+      "PH-DI03",
+      "PH-DI04",
+      "PH-DI05",
+      "PH-DI06",
+      "PH-DI07",
+      "PH-DI08",
+      "PH-IT01",
+      "PH-OB08",
+      "PH-OB09",
+      "PH-BL10"
+    ],
+    "profile_ids": [
+      "win11-sysmon15-no-edr",
+      "win10-21h2-sysmon15-no-edr"
+    ],
+    "architectures": [
+      "x64"
+    ],
+    "telemetry_sources": [
+      "sysmon"
+    ],
+    "input_contract_ref": "contract://plugin-harness/empty-json-smoke-v1",
+    "oracle_ref": "oracle://ph-matrix/sysmon-projected-v1",
+    "collector_config_ref": "collector://sysmon/related-process-v1",
+    "isolation_profile_ref": "vm-profile://win11-sysmon15-no-edr/nat-snapshot/REPLACE_WITH_SNAPSHOT",
+    "required_assertions": [
+      "process.created",
+      "process.exit_code_zero",
+      "sysmon.event_id.1",
+      "sysmon.event_id.2",
+      "sysmon.event_id.7",
+      "sysmon.event_id.8",
+      "sysmon.event_id.10",
+      "sysmon.event_id.11",
+      "sysmon.event_id.13",
+      "sysmon.event_id.25",
+      "sysmon.event_id.26"
+    ],
+    "timeout_s": 120
+  },
+  "vmware_verification_config": "factory-vmware-verification.json.example",
+  "profile": {
+    "profile_id": "win11-sysmon15-no-edr",
+    "env_detail": {
+      "os_build": "22631",
+      "sysmon": "15.0",
+      "network_mode": "nat",
+      "snapshot": "REPLACE_WITH_SNAPSHOT"
+    },
+    "security_product_enabled": false,
+    "high_risk_enabled": false,
+    "isolated": false,
+    "rollback_capable": true,
+    "sensors_ready": true,
+    "no_edr_control": true
+  },
+  "msbuild_path": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+  "link_toolchain_fp": "msvc-v143-x64@operator-pinned+crt-static+harness-v1",
+  "link_timeout_s": 900
+}

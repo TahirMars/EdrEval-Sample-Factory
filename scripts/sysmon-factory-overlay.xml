@@ -1,0 +1,255 @@
+<!--
+ EdrEval factory Sysmon overlay for win11-sysmon15-no-edr (pipeline A).
+
+ Sysmon `Sysmon64 -c <file>` REPLACES the entire configuration. This file is a
+ complete factory profile, not a fragment to apply on top of an empty include
+ list. It keeps ProcessCreate as exclude-noise (so new TTP plugins still log
+ EID1) and turns on the SwiftOnSecurity-default-off channels required by
+ docs/coverage/procedure-host-ttp-coverage-matrix.md Sysmon columns:
+
+   EID2  FileCreateTime          PH-BL07
+   EID7  ImageLoad               PH-EX06/EX07, PH-PE07, PH-HJ01, PH-IN08, PH-BL03, PH-OB06
+   EID8  CreateRemoteThread      PH-IN01/IN03 (exclude OS sources only; never
+                                 kernel32 StartModule — CreateRemoteThread's
+                                 start stub lives there, so that rule drops IN01)
+   EID10 ProcessAccess           PH-IN01–IN06/IN08, PH-EX10, PH-PE02
+   EID11 FileCreate              PH-IA/EX/PE/HJ/OB landing; PH-PS03 Tasks XML
+   EID13 RegistryEvent           PH-PS01 service-key writes (Services\*);
+                                 PH-PS02 Run/RunOnce; PH-PS03 TaskCache
+   EID15 FileCreateStreamHash    PH-IA01/IA04/IA05, PH-EX05, PH-OB04/OB07, PH-BL09
+   EID23/26 FileDelete*          PH-BL08
+   EID25 ProcessTampering        PH-IN02/IN06/IN07
+
+ Matching is path/role based (lab run root, user profile, Temp, LOLBins), not
+ plugin_id or notepad.exe-only, so later plugins under
+ C:\ProgramData\EdrEvalAgent or C:\Users still emit telemetry.
+
+ Not covered by this file (do not pretend they are): ETW-TI, PowerShell 4104,
+ ASR, Defender Operational, commercial EDR memory scan.
+
+ Apply elevated on the guest, then take a new snapshot (sensor baseline change):
+   Sysmon64.exe -c F:\path\sysmon-factory-overlay.xml
+
+ ProcessCreate exclude noise is adapted from SwiftOnSecurity/sysmon-config
+ (CC BY 4.0, https://github.com/SwiftOnSecurity/sysmon-config).
+-->
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>SHA256</HashAlgorithms>
+  <CheckRevocation>False</CheckRevocation>
+  <EventFiltering>
+
+    <!-- EID1: log all process creates except known OS noise. New plugins remain visible. -->
+    <RuleGroup name="factory-process-create" groupRelation="or">
+      <ProcessCreate onmatch="exclude">
+        <CommandLine condition="begin with">C:\Windows\system32\DllHost.exe /Processid</CommandLine>
+        <CommandLine condition="begin with">C:\Windows\system32\wbem\wmiprvse.exe</CommandLine>
+        <CommandLine condition="is">C:\Windows\system32\SearchIndexer.exe /Embedding</CommandLine>
+        <Image condition="is">C:\Windows\System32\RuntimeBroker.exe</Image>
+        <Image condition="is">C:\Windows\System32\backgroundTaskHost.exe</Image>
+        <Image condition="is">C:\Windows\System32\conhost.exe</Image>
+        <ParentImage condition="is">C:\Windows\System32\SearchIndexer.exe</ParentImage>
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- EID2: timestomp on factory/user-writable payloads (PH-BL07). -->
+    <RuleGroup name="factory-file-create-time" groupRelation="or">
+      <FileCreateTime onmatch="include">
+        <TargetFilename condition="begin with">C:\ProgramData\EdrEvalAgent</TargetFilename>
+        <TargetFilename condition="begin with">C:\Users</TargetFilename>
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+        <Image condition="begin with">C:\ProgramData\EdrEvalAgent</Image>
+        <Image condition="begin with">C:\Users</Image>
+      </FileCreateTime>
+    </RuleGroup>
+
+    <!-- EID3: outbound from lab/user/LOLBin images (PH-IA03, PH-EX01/05–09). -->
+    <RuleGroup name="factory-network-connect" groupRelation="or">
+      <NetworkConnect onmatch="include">
+        <Image condition="begin with">C:\ProgramData\EdrEvalAgent</Image>
+        <Image condition="begin with">C:\Users</Image>
+        <Image condition="contains">\Temp\</Image>
+        <Image condition="end with">\powershell.exe</Image>
+        <Image condition="end with">\pwsh.exe</Image>
+        <Image condition="end with">\cmd.exe</Image>
+        <Image condition="end with">\mshta.exe</Image>
+        <Image condition="end with">\wscript.exe</Image>
+        <Image condition="end with">\cscript.exe</Image>
+        <Image condition="end with">\rundll32.exe</Image>
+        <Image condition="end with">\regsvr32.exe</Image>
+        <Image condition="end with">\msbuild.exe</Image>
+        <Image condition="end with">\InstallUtil.exe</Image>
+        <Image condition="end with">\WINWORD.EXE</Image>
+        <Image condition="end with">\EXCEL.EXE</Image>
+        <Image condition="end with">\ONENOTE.EXE</Image>
+        <Image condition="end with">\OUTLOOK.EXE</Image>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- EID6: unsigned/invalid drivers (future high-risk profile; cheap on a lab VM). -->
+    <RuleGroup name="factory-driver-load" groupRelation="or">
+      <DriverLoad onmatch="include">
+        <SignatureStatus condition="is">Expired</SignatureStatus>
+        <SignatureStatus condition="is">invalid</SignatureStatus>
+        <SignatureStatus condition="is">unavailable</SignatureStatus>
+      </DriverLoad>
+    </RuleGroup>
+
+    <!-- EID7: DLL load from lab/user/temp, plus LOLBin hosts (PH-HJ01, PH-IN08, PH-EX06/07). -->
+    <RuleGroup name="factory-image-load" groupRelation="or">
+      <ImageLoad onmatch="include">
+        <ImageLoaded condition="begin with">C:\ProgramData\EdrEvalAgent</ImageLoaded>
+        <ImageLoaded condition="begin with">C:\Users</ImageLoaded>
+        <ImageLoaded condition="contains">\Temp\</ImageLoaded>
+        <Image condition="begin with">C:\ProgramData\EdrEvalAgent</Image>
+        <Image condition="end with">\rundll32.exe</Image>
+        <Image condition="end with">\regsvr32.exe</Image>
+        <Image condition="end with">\powershell.exe</Image>
+        <Image condition="end with">\pwsh.exe</Image>
+        <ImageLoaded condition="end with">\scrobj.dll</ImageLoaded>
+      </ImageLoad>
+    </RuleGroup>
+
+    <!-- EID8: remote thread except well-known OS sources (PH-IN01/IN03).
+         Do not exclude StartModule=kernel32.dll: CreateRemoteThread reports
+         kernel32!BaseThreadInitThunk as StartModule, which is exactly IN01. -->
+    <RuleGroup name="factory-create-remote-thread" groupRelation="or">
+      <CreateRemoteThread onmatch="exclude">
+        <SourceImage condition="is">C:\Windows\system32\wbem\WmiPrvSE.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\svchost.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\wininit.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\csrss.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\services.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\winlogon.exe</SourceImage>
+      </CreateRemoteThread>
+    </RuleGroup>
+
+    <!-- EID10: cross-process access from lab/user/temp/LOLBin sources (PH-IN*, PH-PE02, PH-EX10). -->
+    <RuleGroup name="factory-process-access-source" groupRelation="or">
+      <ProcessAccess onmatch="include">
+        <SourceImage condition="begin with">C:\ProgramData\EdrEvalAgent</SourceImage>
+        <SourceImage condition="begin with">C:\Users</SourceImage>
+        <SourceImage condition="contains">\Temp\</SourceImage>
+        <SourceImage condition="end with">\powershell.exe</SourceImage>
+        <SourceImage condition="end with">\pwsh.exe</SourceImage>
+        <SourceImage condition="end with">\rundll32.exe</SourceImage>
+        <SourceImage condition="end with">\regsvr32.exe</SourceImage>
+        <SourceImage condition="end with">\mshta.exe</SourceImage>
+        <SourceImage condition="end with">\wscript.exe</SourceImage>
+        <SourceImage condition="end with">\cscript.exe</SourceImage>
+        <SourceImage condition="end with">\msbuild.exe</SourceImage>
+        <SourceImage condition="end with">\InstallUtil.exe</SourceImage>
+        <SourceImage condition="end with">\dllhost.exe</SourceImage>
+      </ProcessAccess>
+    </RuleGroup>
+    <RuleGroup name="factory-process-access-granted" groupRelation="or">
+      <ProcessAccess onmatch="include">
+        <GrantedAccess condition="is">0x1FFFFF</GrantedAccess>
+        <GrantedAccess condition="is">0x1F3FFF</GrantedAccess>
+        <GrantedAccess condition="is">0x1F0FFF</GrantedAccess>
+        <GrantedAccess condition="is">0x143A</GrantedAccess>
+        <GrantedAccess condition="is">0x1438</GrantedAccess>
+        <GrantedAccess condition="is">0x1410</GrantedAccess>
+        <GrantedAccess condition="is">0x1400</GrantedAccess>
+        <GrantedAccess condition="is">0x1010</GrantedAccess>
+        <GrantedAccess condition="is">0x40</GrantedAccess>
+      </ProcessAccess>
+    </RuleGroup>
+    <RuleGroup name="factory-process-access-exclude-os" groupRelation="or">
+      <ProcessAccess onmatch="exclude">
+        <SourceImage condition="is">C:\Windows\system32\csrss.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\smss.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\services.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\wininit.exe</SourceImage>
+        <SourceImage condition="is">C:\Windows\system32\svchost.exe</SourceImage>
+        <SourceImage condition="end with">\MsMpEng.exe</SourceImage>
+        <SourceImage condition="end with">\SearchIndexer.exe</SourceImage>
+      </ProcessAccess>
+    </RuleGroup>
+
+    <!-- EID11: payload/script/office landing in lab/user/temp (PH-IA*, PH-EX03/04/08, PH-HJ01). -->
+    <RuleGroup name="factory-file-create" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="begin with">C:\ProgramData\EdrEvalAgent</TargetFilename>
+        <TargetFilename condition="begin with">C:\Users</TargetFilename>
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+        <TargetFilename condition="contains">\Downloads\</TargetFilename>
+        <TargetFilename condition="begin with">C:\Windows\System32\Tasks</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+    <!-- EID12/13/14: HKCU class hijack / run keys / blob storage (PH-PE01, PH-OB04)
+         plus service-key writes for PH-PS01 (CreateService WinAPI/RPC/named pipe)
+         and TaskCache writes for PH-PS03 (ITaskFolder::RegisterTask). -->
+    <RuleGroup name="factory-registry" groupRelation="or">
+      <RegistryEvent onmatch="include">
+        <TargetObject condition="begin with">HKCU\Software\Classes</TargetObject>
+        <TargetObject condition="begin with">HKU\Software\Classes</TargetObject>
+        <TargetObject condition="contains">\CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">\CurrentVersion\RunOnce</TargetObject>
+        <TargetObject condition="contains">\Image File Execution Options\</TargetObject>
+        <TargetObject condition="contains">\AppInit_DLLs</TargetObject>
+        <TargetObject condition="contains">\AppCertDlls</TargetObject>
+        <TargetObject condition="contains">\Environment\UserInitMprLogonScript</TargetObject>
+        <TargetObject condition="contains">\CurrentControlSet\Services\</TargetObject>
+        <TargetObject condition="contains">\ControlSet001\Services\</TargetObject>
+        <TargetObject condition="contains">\Schedule\TaskCache</TargetObject>
+        <Image condition="begin with">C:\ProgramData\EdrEvalAgent</Image>
+        <Image condition="begin with">C:\Users</Image>
+      </RegistryEvent>
+    </RuleGroup>
+
+    <!-- EID15: ADS / MotW (PH-IA01/04/05, PH-BL09, PH-OB04). -->
+    <RuleGroup name="factory-ads" groupRelation="or">
+      <FileCreateStreamHash onmatch="include">
+        <TargetFilename condition="begin with">C:\ProgramData\EdrEvalAgent</TargetFilename>
+        <TargetFilename condition="begin with">C:\Users</TargetFilename>
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+        <TargetFilename condition="contains">Downloads</TargetFilename>
+        <TargetFilename condition="end with">:Zone.Identifier</TargetFilename>
+        <TargetFilename condition="end with">.lnk</TargetFilename>
+        <TargetFilename condition="end with">.hta</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.js</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.doc</TargetFilename>
+        <TargetFilename condition="end with">.docm</TargetFilename>
+        <TargetFilename condition="end with">.iso</TargetFilename>
+      </FileCreateStreamHash>
+    </RuleGroup>
+
+    <!-- EID22: DNS from lab/user/script hosts (download cradles). -->
+    <RuleGroup name="factory-dns" groupRelation="or">
+      <DnsQuery onmatch="include">
+        <Image condition="begin with">C:\ProgramData\EdrEvalAgent</Image>
+        <Image condition="begin with">C:\Users</Image>
+        <Image condition="end with">\powershell.exe</Image>
+        <Image condition="end with">\pwsh.exe</Image>
+        <Image condition="end with">\mshta.exe</Image>
+        <Image condition="end with">\wscript.exe</Image>
+        <Image condition="end with">\rundll32.exe</Image>
+        <Image condition="end with">\regsvr32.exe</Image>
+        <Image condition="end with">\WINWORD.EXE</Image>
+      </DnsQuery>
+    </RuleGroup>
+
+    <!-- EID23: archived deletes can fill disk; use detected-only for PH-BL08. -->
+    <RuleGroup name="factory-file-delete-detected" groupRelation="or">
+      <FileDeleteDetected onmatch="include">
+        <TargetFilename condition="begin with">C:\ProgramData\EdrEvalAgent</TargetFilename>
+        <TargetFilename condition="begin with">C:\Users</TargetFilename>
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+      </FileDeleteDetected>
+    </RuleGroup>
+
+    <!-- EID25: process tampering except browser self-updates (PH-IN02/IN06/IN07). -->
+    <RuleGroup name="factory-process-tampering" groupRelation="or">
+      <ProcessTampering onmatch="exclude">
+        <Image condition="begin with">C:\Program Files (x86)\Microsoft\Edge\Application\</Image>
+        <Image condition="begin with">C:\Program Files\Google\Chrome\Application\</Image>
+        <Image condition="begin with">C:\Program Files (x86)\Google\Chrome\Application\</Image>
+        <Image condition="begin with">C:\Program Files\Mozilla Firefox\</Image>
+      </ProcessTampering>
+    </RuleGroup>
+
+  </EventFiltering>
+</Sysmon>

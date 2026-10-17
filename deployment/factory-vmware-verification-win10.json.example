@@ -1,0 +1,20 @@
+{
+  "schema_version": "factory-vmware-verification-v2",
+  "profile_id": "win10-21h2-sysmon15-no-edr",
+  "vmrun_path": "C:\\Program Files (x86)\\VMware\\VMware Workstation\\vmrun.exe",
+  "vmx_path": "C:\\REPLACE_WITH_VM\\Win10_21H2.vmx",
+  "snapshot_name": "REPLACE_WITH_BASELINE_SNAPSHOT",
+  "vm_encryption_password_ref": null,
+  "vm_profile_path": "C:\\REPLACE_WITH_BOOTSTRAP\\vm-profile-win10.json",
+  "winrm_certificate_path": "C:\\REPLACE_WITH_BOOTSTRAP\\winrm-win10-server.cer",
+  "guest_password_ref": "lab-secret://winrm/factory-vm-win10-runner-password",
+  "runtime_root": "C:\\REPLACE_WITH_AUTHORIZED_FACTORY\\runtime",
+  "guest_artifact_name": "sample.exe",
+  "allow_nat": false,
+  "startup_timeout_s": 180,
+  "execution_timeout_s": 120,
+  "settle_timeout_s": 3,
+  "lock_timeout_s": 30,
+  "poll_interval_s": 2,
+  "max_sysmon_events": 512
+}

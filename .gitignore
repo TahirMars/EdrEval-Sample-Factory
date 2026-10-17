@@ -1,0 +1,59 @@
+# Python-generated artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# venv 与工具缓存
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.mutmut-cache
+
+# 本仓库只存控制面与部署配置。TTP/插件源码、编译中间件和载荷产物由独立的
+# catalog/runtime 仓持有（见 EdrEval-Sample-Factory-Repository）。
+packages/sample_factory/TTP/
+*.exe
+*.dll
+*.pdb
+*.obj
+*.lib
+*.ilk
+*.iobj
+*.ipdb
+*.tlog
+*.lastbuildstate
+*.APS
+*.recipe
+
+# 密钥与本地凭据
+**/secrets.env
+!**/secrets.env.example
+**/*.pem
+**/runtime.toml
+!**/runtime.example.toml
+
+# 设计讲解与合同长文（本机保留；不入库）
+docs/dev/
+docs/superpowers/
+
+# deployment：仅提交模板 / example；本机实例、种子与脚本不入库
+deployment/*
+!deployment/*.example
+!deployment/*.example.*
+!deployment/*.example.toml
+
+# 本地触发监视器工件
+.watch/
+
+# 本地 factory VM bootstrap 回执（环境相关；证书公钥也不随通用实现提交）
+scripts/vm-profile.json
+scripts/vm-profile.json_*
+scripts/vm-profile-*.json
+scripts/winrm-server.cer
+scripts/winrm-server.cer_*
+scripts/winrm-*-server.cer

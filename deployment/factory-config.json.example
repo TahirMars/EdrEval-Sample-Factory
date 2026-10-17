@@ -1,0 +1,22 @@
+{
+  "schema_version": "factory-config-v2",
+  "coverage_matrix": "../docs/coverage/procedure-host-ttp-coverage-matrix.md",
+  "catalog_root": "C:/REPLACE_WITH_AUTHORIZED_FACTORY/catalog",
+  "runtime_root": "C:/REPLACE_WITH_AUTHORIZED_FACTORY/runtime",
+  "manifest_root": "C:/REPLACE_WITH_AUTHORIZED_FACTORY/manifests",
+  "verification_config": "factory-vmware-verification.json.example",
+  "plugin_harness_config": "factory-plugin-harness.json.example",
+  "runtime_toml": "runtime.toml",
+  "secrets_env": "secrets.env",
+  "plugin_build_target_ref": "build-target://initial/windows-msvc-v143-x64-plugin",
+  "state_backend_ref": "packages.factory_host.backends:create_postgres_state_backend",
+  "compiler_backend_ref": "replace_with_operator_package.backends:create_compiler_backend",
+  "artifact_publisher_ref": "replace_with_operator_package.backends:create_artifact_publisher",
+  "planner_retry_limit": 3,
+  "glue_retry_limit": 2,
+  "planner_max_tokens": 16384,
+  "glue_max_tokens": 16384,
+  "glue_agent_max_turns": 64,
+  "max_compile_attempts": 3,
+  "compiler_memory_limit_mb": 8192
+}

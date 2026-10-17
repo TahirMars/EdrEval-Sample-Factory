@@ -1,0 +1,33 @@
+{
+    "targets": [
+        {
+            "target_ref": "build-target://initial/windows-msvc-v143-x64",
+            "argv_template": [
+                "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+                "{source_root}\\generated\\sample.vcxproj",
+                "/m:1",
+                "/p:Configuration=Release",
+                "/p:Platform=x64",
+                "/p:OutDir={output_dir}\\"
+            ],
+            "artifact_relative": "sample.exe",
+            "toolchain_fp": "msvc-v143-x64@operator-pinned+crt-static",
+            "timeout_s": 900
+        },
+        {
+            "target_ref": "build-target://initial/windows-msvc-v143-x64-plugin",
+            "argv_template": [
+                "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+                "{source_root}\\generated\\sample.vcxproj",
+                "/m:1",
+                "/p:Configuration=Release",
+                "/p:Platform=x64",
+                "/p:OutDir={output_dir}\\",
+                "/p:TargetName={implementation_name}"
+            ],
+            "artifact_relative": "{implementation_name}.lib",
+            "toolchain_fp": "msvc-v143-x64@operator-pinned+crt-static",
+            "timeout_s": 900
+        }
+    ]
+}
